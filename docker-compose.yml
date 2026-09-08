@@ -1,0 +1,29 @@
+services:
+
+  youtube-mcp:
+    build:
+      context: ./youtube-mcp
+    container_name: youtube-mcp
+    environment:
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  site-insight-engine:
+    build:
+      context: ./site-insight-engine
+    container_name: site-insight-engine
+    environment:
+      MCP_URL: http://youtube-mcp:8000/mcp
+      FREE_MODE: "true"
+      AUTONOMOUS: "false"
+      PORT: 10000
+    depends_on:
+      - youtube-mcp
+    ports:
+      - "10000:10000"
+    volumes:
+      - ./site-insight-engine/data:/app/data
+    restart: unless-stopped
