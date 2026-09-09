@@ -2,13 +2,16 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY scheduler.py .
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY server.py .
 COPY backup.py .
-RUN pip install --no-cache-dir requests httpx
+COPY scheduler.py .
 
 ENV PYTHONUNBUFFERED=1
-ENV PORT=10000
 
-EXPOSE 10000
+EXPOSE 8000
 
-CMD ["python", "scheduler.py"]
+CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
