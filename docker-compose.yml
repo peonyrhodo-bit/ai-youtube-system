@@ -1,92 +1,53 @@
 services:
 
-  # ==========================================================
-  # YouTube MCP
-  # ==========================================================
-
-  youtube-mcp:
-    build:
-      context: ./youtube-mcp
-
-    container_name: youtube-mcp
+  ai-youtube-system:
+    build: .
+    container_name: ai-youtube-system
+    restart: unless-stopped
 
     environment:
-      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
-      PORT: 8000
+      DATA_DIR: /app/data
+
+      MCP_URL: ${MCP_URL:-https://youtube-mcp-u39z.onrender.com/mcp}
+
+      FREE_MODE: ${FREE_MODE:-true}
+      AUTONOMOUS: ${AUTONOMOUS:-false}
+
+      SERVICE_CHECK_INTERVAL: ${SERVICE_CHECK_INTERVAL:-60}
+
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+      - ./assets:/app/assets
+
+    depends_on:
+      - site-insight-engine
+      - youtube-mcp
+
+  site-insight-engine:
+    build:
+      context: ../site-insight-engine
+    container_name: site-insight-engine
+    restart: unless-stopped
+
+    environment:
+      DATA_DIR: /app/data
+      MCP_URL: http://youtube-mcp:8000/mcp
+
+    volumes:
+      - ../site-insight-engine/data:/app/data
 
     ports:
       - "8000:8000"
 
-    restart: unless-stopped
-
-
-  # ==========================================================
-  # Site Insight Engine
-  # ==========================================================
-
-  site-insight-engine:
+  youtube-mcp:
     build:
-      context: ./site-insight-engine
-
-    container_name: site-insight-engine
+      context: ../youtube-mcp
+    container_name: youtube-mcp
+    restart: unless-stopped
 
     environment:
-      MCP_URL: http://youtube-mcp:8000/mcp
-
-      FREE_MODE: "true"
-      AUTONOMOUS: "false"
-
-      PORT: 10000
-
-    depends_on:
-      - youtube-mcp
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
 
     ports:
-      - "10000:10000"
-
-    volumes:
-      - ./site-insight-engine/data:/app/data
-
-    restart: unless-stopped
-
-
-  # ==========================================================
-  # AI YouTube System / Director Scheduler
-  # ==========================================================
-
-  ai-youtube-system:
-    build:
-      context: ./ai-youtube-system
-
-    container_name: ai-youtube-system
-
-    environment:
-
-      # URL аналитического движка внутри Docker network
-      SITE_INSIGHT_URL: http://site-insight-engine:10000
-
-      # Запуск Growth Radar каждые 6 часов
-      SCHEDULER_INTERVAL_MINUTES: 360
-
-      # Radar
-      RADAR_LANGUAGE: ru
-      RADAR_HOURS_BACK: 72
-      RADAR_MAX_RESULTS: 50
-
-      # Director
-      DIRECTOR_ENABLED: "true"
-
-      # Пока выключено:
-      # база site-insight-engine находится
-      # в отдельном контейнере
-      BACKUP_ENABLED: "false"
-
-      PORT: 10000
-
-    depends_on:
-      - site-insight-engine
-
-    ports:
-      - "10001:10000"
-
-    restart: unless-stopped
+      - "8001:8000"
