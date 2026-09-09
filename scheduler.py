@@ -5,13 +5,16 @@ from datetime import datetime, timezone
 import httpx
 
 
-ENGINE_URL = os.getenv(
-    "ENGINE_URL",
-    "http://site-insight-engine:8000",
-)
+DIRECTOR_URL = os.getenv(
+    "DIRECTOR_URL",
+    "http://localhost:8000/director/run",
+).rstrip("/")
 
 INTERVAL = int(
-    os.getenv("DIRECTOR_INTERVAL", "21600")
+    os.getenv(
+        "DIRECTOR_INTERVAL",
+        "21600",
+    )
 )
 
 
@@ -20,11 +23,12 @@ def now():
 
 
 async def run_director():
-    url = f"{ENGINE_URL}/director/run"
+    async with httpx.AsyncClient(
+        timeout=300
+    ) as client:
 
-    async with httpx.AsyncClient(timeout=300) as client:
-        response = await client.get(
-            url,
+        response = await client.post(
+            DIRECTOR_URL,
             params={
                 "language": "ru",
                 "region_code": "RU",
@@ -44,7 +48,15 @@ async def run_director():
 
 
 async def scheduler_loop():
+    print(
+        now(),
+        "SCHEDULER_STARTED",
+        DIRECTOR_URL,
+        flush=True,
+    )
+
     while True:
+
         try:
             await run_director()
 
@@ -61,4 +73,6 @@ async def scheduler_loop():
 
 
 if __name__ == "__main__":
-    asyncio.run(scheduler_loop())
+    asyncio.run(
+        scheduler_loop()
+    )
