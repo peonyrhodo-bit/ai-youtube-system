@@ -1,137 +1,37 @@
 import os
-import sqlite3
-from pathlib import Path
+import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 
 
-# ============================================================
-# CONFIG
-# ============================================================
-
-DATA_DIR = Path(
-    os.environ.get(
-        "DATA_DIR",
-        str(Path(__file__).parent / "data")
-    )
-)
-
-DB_PATH = DATA_DIR / "youtube.db"
-
-BACKUP_DIR = DATA_DIR / "backups"
-
-MAX_BACKUPS = int(
-    os.environ.get(
-        "MAX_BACKUPS",
-        "7"
-    )
-)
+DATA_DIR = Path(os.getenv("DATA_DIR", "./data"))
+BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "./backups"))
 
 
-# ============================================================
-# BACKUP
-# ============================================================
+def utc_now():
+    return datetime.now(timezone.utc)
+
 
 def create_backup():
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not DB_PATH.exists():
+    timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
+    target = BACKUP_DIR / timestamp
+    target.mkdir(parents=True, exist_ok=True)
 
-        raise FileNotFoundError(
-            f"База данных не найдена: {DB_PATH}"
+    if DATA_DIR.exists():
+        shutil.copytree(
+            DATA_DIR,
+            target / "data",
+            dirs_exist_ok=True,
         )
 
-    BACKUP_DIR.mkdir(
-        parents=True,
-        exist_ok=True
-    )
+    return {
+        "status": "ok",
+        "created_at": utc_now().isoformat(),
+        "path": str(target),
+    }
 
-    timestamp = datetime.now(
-        timezone.utc
-    ).strftime(
-        "%Y-%m-%d_%H-%M-%S"
-    )
-
-    backup_path = (
-        BACKUP_DIR
-        / f"youtube_{timestamp}.db"
-    )
-
-    source = sqlite3.connect(
-        DB_PATH
-    )
-
-    destination = sqlite3.connect(
-        backup_path
-    )
-
-    try:
-
-        source.backup(
-            destination
-        )
-
-        destination.commit()
-
-    finally:
-
-        destination.close()
-        source.close()
-
-    print(
-        f"BACKUP OK: {backup_path}"
-    )
-
-    cleanup_old_backups()
-
-
-# ============================================================
-# CLEANUP
-# ============================================================
-
-def cleanup_old_backups():
-
-    backups = sorted(
-        BACKUP_DIR.glob(
-            "youtube_*.db"
-        ),
-        key=lambda path: path.stat().st_mtime,
-        reverse=True,
-    )
-
-    old_backups = backups[
-        MAX_BACKUPS:
-    ]
-
-    for backup in old_backups:
-
-        try:
-
-            backup.unlink()
-
-            print(
-                f"Удалён старый backup: {backup}"
-            )
-
-        except Exception as error:
-
-            print(
-                f"Ошибка удаления {backup}: {error}"
-            )
-
-
-# ============================================================
-# MAIN
-# ============================================================
 
 if __name__ == "__main__":
-
-    try:
-
-        create_backup()
-
-    except Exception as error:
-
-        print(
-            f"BACKUP ERROR: {error}"
-        )
-
-        raise
+    print(create_backup())
