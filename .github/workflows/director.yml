@@ -1,0 +1,37 @@
+name: AI Director
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+
+  director:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Run AI Director
+        env:
+          DIRECTOR_URL: ${{ secrets.DIRECTOR_URL }}
+        run: |
+          set -e
+
+          echo "Starting AI Director..."
+
+          curl \
+            --fail \
+            --show-error \
+            --silent \
+            --request POST \
+            --get \
+            --url "${DIRECTOR_URL}/director/run" \
+            --data-urlencode "language=ru" \
+            --data-urlencode "region_code=RU" \
+            --data-urlencode "hours_back=72" \
+            --data-urlencode "max_results=50"
+
+          echo
+          echo "AI Director completed."
