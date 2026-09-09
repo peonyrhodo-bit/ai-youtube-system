@@ -8,12 +8,10 @@ services:
     environment:
       DATA_DIR: /app/data
 
-      MCP_URL: ${MCP_URL:-https://youtube-mcp-u39z.onrender.com/mcp}
+      ENGINE_URL: http://site-insight-engine:8000
 
       FREE_MODE: ${FREE_MODE:-true}
       AUTONOMOUS: ${AUTONOMOUS:-false}
-
-      SERVICE_CHECK_INTERVAL: ${SERVICE_CHECK_INTERVAL:-60}
 
     volumes:
       - ./data:/app/data
@@ -22,11 +20,15 @@ services:
 
     depends_on:
       - site-insight-engine
-      - youtube-mcp
+
+    ports:
+      - "8000:8000"
+
 
   site-insight-engine:
     build:
       context: ../site-insight-engine
+
     container_name: site-insight-engine
     restart: unless-stopped
 
@@ -38,11 +40,16 @@ services:
       - ../site-insight-engine/data:/app/data
 
     ports:
-      - "8000:8000"
+      - "8001:8000"
+
+    depends_on:
+      - youtube-mcp
+
 
   youtube-mcp:
     build:
       context: ../youtube-mcp
+
     container_name: youtube-mcp
     restart: unless-stopped
 
@@ -50,4 +57,4 @@ services:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
 
     ports:
-      - "8001:8000"
+      - "8002:8000"
