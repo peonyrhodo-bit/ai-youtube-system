@@ -4,8 +4,7 @@ WORKDIR /app
 
 COPY scheduler.py .
 COPY backup.py .
-
-RUN pip install --no-cache-dir requests
+RUN pip install --no-cache-dir requests httpx
 
 ENV PYTHONUNBUFFERED=1
 ENV PORT=10000
