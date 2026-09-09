@@ -1,29 +1,92 @@
 services:
 
+  # ==========================================================
+  # YouTube MCP
+  # ==========================================================
+
   youtube-mcp:
     build:
       context: ./youtube-mcp
+
     container_name: youtube-mcp
+
     environment:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
       PORT: 8000
+
     ports:
       - "8000:8000"
+
     restart: unless-stopped
+
+
+  # ==========================================================
+  # Site Insight Engine
+  # ==========================================================
 
   site-insight-engine:
     build:
       context: ./site-insight-engine
+
     container_name: site-insight-engine
+
     environment:
       MCP_URL: http://youtube-mcp:8000/mcp
+
       FREE_MODE: "true"
       AUTONOMOUS: "false"
+
       PORT: 10000
+
     depends_on:
       - youtube-mcp
+
     ports:
       - "10000:10000"
+
     volumes:
       - ./site-insight-engine/data:/app/data
+
+    restart: unless-stopped
+
+
+  # ==========================================================
+  # AI YouTube System / Director Scheduler
+  # ==========================================================
+
+  ai-youtube-system:
+    build:
+      context: ./ai-youtube-system
+
+    container_name: ai-youtube-system
+
+    environment:
+
+      # URL аналитического движка внутри Docker network
+      SITE_INSIGHT_URL: http://site-insight-engine:10000
+
+      # Запуск Growth Radar каждые 6 часов
+      SCHEDULER_INTERVAL_MINUTES: 360
+
+      # Radar
+      RADAR_LANGUAGE: ru
+      RADAR_HOURS_BACK: 72
+      RADAR_MAX_RESULTS: 50
+
+      # Director
+      DIRECTOR_ENABLED: "true"
+
+      # Пока выключено:
+      # база site-insight-engine находится
+      # в отдельном контейнере
+      BACKUP_ENABLED: "false"
+
+      PORT: 10000
+
+    depends_on:
+      - site-insight-engine
+
+    ports:
+      - "10001:10000"
+
     restart: unless-stopped
