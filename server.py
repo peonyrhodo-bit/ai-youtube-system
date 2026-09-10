@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 
 
@@ -168,17 +169,17 @@ async def director_history():
         "GET",
         "/director/history",
     )
+class DirectorChatRequest(BaseModel):
+    message: str
 
 @app.post("/director/chat")
 async def director_chat(
-    request: Request,
+    request: DirectorChatRequest,
 ):
-    body = await request.json()
-
     return await engine_request(
         "POST",
         "/director/chat",
-        json=body,
+        json=request.model_dump(),
     )
 
 @app.get("/events")
