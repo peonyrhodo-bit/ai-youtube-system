@@ -35,6 +35,7 @@ async def engine_request(
     method: str,
     path: str,
     params: dict | None = None,
+    json: dict | None = None,
 ):
     url = f"{ENGINE_URL}{path}"
 
@@ -44,10 +45,11 @@ async def engine_request(
         ) as client:
 
             response = await client.request(
-                method,
-                url,
-                params=params,
-            )
+    method,
+    url,
+    params=params,
+    json=json,
+)
 
     except httpx.RequestError as error:
         raise HTTPException(
