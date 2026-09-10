@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timezone
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 
@@ -169,6 +169,17 @@ async def director_history():
         "/director/history",
     )
 
+@app.post("/director/chat")
+async def director_chat(
+    request: Request,
+):
+    body = await request.json()
+
+    return await engine_request(
+        "POST",
+        "/director/chat",
+        json=body,
+    )
 
 @app.get("/events")
 async def events():
